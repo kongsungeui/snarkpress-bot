@@ -6,11 +6,21 @@ auth = HTTPBasicAuth(WP_USER, WP_APP_PASSWORD)
 
 
 def upload_media(image_path, alt_text=""):
+    """
+    이미지 업로드 -> media_id 반환
+    JPEG/PNG 둘 다 지원
+    """
     url = f"{WP_URL}/wp-json/wp/v2/media"
     filename = image_path.name
 
+    suffix = image_path.suffix.lower()
+    if suffix in [".jpg", ".jpeg"]:
+        mime = "image/jpeg"
+    else:
+        mime = "image/png"
+
     with open(image_path, "rb") as f:
-        files = {"file": (filename, f, "image/png")}
+        files = {"file": (filename, f, mime)}
         data = {"alt_text": alt_text}
         headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
         r = requests.post(url, auth=auth, files=files, data=data, headers=headers)
