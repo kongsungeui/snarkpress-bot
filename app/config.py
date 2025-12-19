@@ -19,3 +19,5 @@ WP_CATEGORY_KR_TECH = int(os.getenv("WP_CAT_KR_TECH", "0"))
 WP_CATEGORY_GAME = int(os.getenv("WP_CAT_GAME", "0"))
 
 DATA_PATH = BASE_DIR / "data.json"
+
+ENABLE_IMAGE_GENERATION = os.getenv("ENABLE_IMAGE_GENERATION", "false").lower() == "true"
