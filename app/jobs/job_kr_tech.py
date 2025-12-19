@@ -44,11 +44,17 @@ def run():
     print("[KR_TECH] Post data generated from GPT")
 
     # 5. 밈 이미지 생성
+    media_id = None
     image_path = image_utils.generate_meme_image(
         meme_prompt=post_data["meme_prompt"],
-        job_prefix=f"kr_tech_{today_str}",
+        job_prefix=f"game_{today_str}",
     )
-    print(f"[KR_TECH] Meme image generated at {image_path}")
+    if image_path:
+        media_id = wp_client.upload_media(
+            image_path=image_path,
+            alt_text=post_data["meme_alt_text"],
+        )
+        print(f"[GAME] Meme image generated at {image_path}")
 
     # 6. 워드프레스에 이미지 업로드
     media_id = wp_client.upload_media(

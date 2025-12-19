@@ -51,12 +51,18 @@ def run():
     print(f"[US_TECH] Meme image generated at {image_path}")
 
     # 6. 워드프레스에 이미지 업로드
-    media_id = wp_client.upload_media(
-        image_path=image_path,
-        alt_text=post_data["meme_alt_text"],
+    media_id = None
+    image_path = image_utils.generate_meme_image(
+        meme_prompt=post_data["meme_prompt"],
+        job_prefix=f"game_{today_str}",
     )
-    print(f"[US_TECH] Uploaded media. media_id={media_id}")
-
+    if image_path:
+        media_id = wp_client.upload_media(
+            image_path=image_path,
+            alt_text=post_data["meme_alt_text"],
+        )
+        print(f"[GAME] Meme image generated at {image_path}")
+        
     # 7. 워드프레스에 글 발행
     wp_client.create_post(
         title=post_data["title"],
