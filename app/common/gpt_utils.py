@@ -1,16 +1,46 @@
+import json
+from typing import List, Dict
+
 from openai import OpenAI
 from app.config import OPENAI_API_KEY
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 
-def pick_top_item(candidates, context: str) -> dict:
+def _extract_text_content(message) -> str:
+    """
+    OpenAI SDK v1 기준:
+    - message.content 가 리스트(TextContentBlock[]) 일 수 있어서
+      그걸 전부 합쳐서 하나의 문자열로 만든다.
+    """
+    content = message.content
+    if isinstance(content, str):
+        return content
+
+    # content 가 list 인 경우 (멀티 파트)
+    parts = []
+    for part in content:
+        # TextContentBlock 인 경우 .text 존재
+        text = getattr(part, "text", None)
+        if text is None:
+            # 혹시 모를 fallback
+            if isinstance(part, str):
+                text = part
+            else:
+                text = ""
+        parts.append(text)
+    return "".join(parts)
+
+
+def pick_top_item(candidates: List[Dict[str, str]], context: str) -> Dict[str, str]:
     """
     candidates: list of {
         "title": str,
         "summary": str,
         "url": str
     }
+
+    반환: 선택된 candidate 하나
     """
     if not candidates:
         raise ValueError("No news candidates provided")
@@ -45,23 +75,36 @@ def pick_top_item(candidates, context: str) -> dict:
         response_format={"type": "json_object"},
     )
 
-    idx = resp.choices[0].message.parsed["index"]
+    raw = _extract_text_content(resp.choices[0].message)
+    data = json.loads(raw)
+
+    idx = data["index"]
     return candidates[idx]
 
 
-def build_post(item, tone: str) -> dict:
+def build_post(item: Dict[str, str], tone: str) -> Dict[str, str]:
     """
     tone:
       - us_tech
       - kr_tech
       - game
+
+    반환 예:
+    {
+      "title": "...",
+      "body_markdown": "...",
+      "cynical_comment": "...",
+      "meme_prompt": "...",
+      "meme_alt_text": "..."
+    }
     """
 
-    tone_desc = {
+    tone_desc_map = {
         "us_tech": "미국 테크 업계, 실리콘밸리 시각, 냉소적이지만 똑똑한 테크 칼럼니스트처럼",
         "kr_tech": "한국 테크 업계, 규제/대기업/스타트업 씬을 잘 아는 냉소적인 한국 IT 칼럼니스트처럼",
         "game": "글로벌 게임 업계 분위기와 밈 문화를 이해하는 날카롭고 시니컬한 게임 기자처럼",
-    }[tone]
+    }
+    tone_desc = tone_desc_map.get(tone, "냉소적인 테크 칼럼니스트처럼")
 
     prompt = f"""
 너는 {tone_desc} 글을 쓴다.
@@ -84,9 +127,12 @@ def build_post(item, tone: str) -> dict:
 """
 
     resp = client.chat.completions.create(
-        model="gpt-5.1",
+        model="gpt-4.1",
         messages=[{"role": "user", "content": prompt}],
         response_format={"type": "json_object"},
     )
 
-    return resp.choices[0].message.parsed
+    raw = _extract_text_content(resp.choices[0].message)
+    data = json.loads(raw)
+
+    return data
