@@ -1,3 +1,4 @@
+import re
 import requests
 from requests.auth import HTTPBasicAuth
 from app.config import WP_URL, WP_USER, WP_APP_PASSWORD
@@ -35,6 +36,8 @@ def create_post(title, body_markdown, cynical_comment, meme_media_id, category_i
     - 상단에 "오늘의 한줄 냉소" 블록을 굵게/박스로 강조
     """
 
+    body_markdown = _ensure_links_open_in_new_tab(body_markdown)
+
     url = f"{WP_URL}/wp-json/wp/v2/posts"
 
     content = f"""
@@ -61,3 +64,19 @@ def create_post(title, body_markdown, cynical_comment, meme_media_id, category_i
     r = requests.post(url, auth=auth, json=data)
     r.raise_for_status()
     return r.json()
+
+
+def _ensure_links_open_in_new_tab(html: str) -> str:
+    """
+    Adds target="_blank" and rel attributes to anchor tags that lack them so that
+    source links open in a new tab.
+    """
+
+    def _replace(match: re.Match) -> str:
+        anchor_tag = match.group(0)
+        if "target=" in anchor_tag:
+            return anchor_tag
+        # Insert attributes right after the opening <a
+        return anchor_tag.replace("<a", '<a target="_blank" rel="noopener noreferrer"', 1)
+
+    return re.sub(r"<a[^>]*>", _replace, html)
