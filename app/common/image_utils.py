@@ -76,7 +76,12 @@ def generate_meme_image(meme_prompt: str, job_prefix: str):
         "contents": [
             {
                 "parts": [
-                    {"text": meme_prompt}
+                    {
+                        "text": (
+                            f"{meme_prompt}\n\n"
+                            "All text that appears inside the image must be in English only."
+                        )
+                    }
                 ]
             }
         ],
