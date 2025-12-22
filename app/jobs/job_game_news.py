@@ -60,9 +60,15 @@ def run():
         print(f"[GAME] Meme image generated at {image_path}")
 
     # 7. 워드프레스에 글 발행
+    body_with_source = gpt_utils.append_source_link(
+        body_markdown=post_data["body_markdown"],
+        source_url=picked["url"],
+        link_text=post_data.get("source_link_text", "원문 보기"),
+    )
+
     wp_client.create_post(
         title=post_data["title"],
-        body_markdown=post_data["body_markdown"],
+        body_markdown=body_with_source,
         cynical_comment=post_data["cynical_comment"],
         meme_media_id=media_id,
         category_id=WP_CATEGORY_GAME,
