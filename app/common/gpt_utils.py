@@ -1,4 +1,5 @@
 import json
+from html import escape
 from typing import List, Dict
 
 from openai import OpenAI
@@ -95,7 +96,8 @@ def build_post(item: Dict[str, str], tone: str) -> Dict[str, str]:
       "body_markdown": "...",
       "cynical_comment": "...",
       "meme_prompt": "...",
-      "meme_alt_text": "..."
+      "meme_alt_text": "...",
+      "source_link_text": "..."
     }
     """
 
@@ -119,10 +121,11 @@ def build_post(item: Dict[str, str], tone: str) -> Dict[str, str]:
 
 {{
   "title": "블로그용 제목",
-  "body_markdown": "3~6줄 정도의 요약. Markdown 형식 가능. 원문 링크도 포함.",
+  "body_markdown": "3~6줄 정도의 요약. Markdown 형식 가능. 원문 링크는 넣지 말고 본문만",
   "cynical_comment": "짧고 임팩트 있는 시니컬 코멘트 1줄",
   "meme_prompt": "이 뉴스에 어울리는 밈 이미지 설명 (AI 이미지 생성용)",
-  "meme_alt_text": "ALT 텍스트"
+  "meme_alt_text": "ALT 텍스트",
+  "source_link_text": "원문 링크용 앵커 텍스트 (간결하게)"
 }}
 """
 
@@ -136,3 +139,23 @@ def build_post(item: Dict[str, str], tone: str) -> Dict[str, str]:
     data = json.loads(raw)
 
     return data
+
+
+def append_source_link(body_markdown: str, source_url: str, link_text: str = "원문 보기") -> str:
+    """
+    본문 마크다운에 원문 링크 HTML 블록을 덧붙인다.
+    - body_markdown: GPT가 생성한 본문(링크 없음)
+    - source_url: 원문 URL
+    - link_text: 앵커 텍스트(없으면 기본값)
+    """
+
+    if not source_url:
+        return body_markdown
+
+    safe_url = escape(source_url, quote=True)
+    safe_text = escape(link_text or "원문 보기")
+    source_block = f'<p><strong>원문:</strong> <a href="{safe_url}">{safe_text}</a></p>'
+
+    if body_markdown.strip():
+        return f"{body_markdown}\n\n{source_block}"
+    return source_block
